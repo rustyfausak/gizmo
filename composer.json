@@ -1,0 +1,12 @@
+{
+	"name": "rustyfausak/gizmo",
+	"description": "A Rocket League replay parser.",
+	"homepage": "https://github.com/rustyfausak/gizmo",
+	"license": "MIT",
+	"require": {
+		"php": ">=5.5.9"
+	},
+	"autoload": {
+		"psr-4": { "Gizmo\\": "lib/" }
+	}
+}
