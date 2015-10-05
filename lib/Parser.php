@@ -37,7 +37,7 @@ class Parser
 
         $replay->levels = self::readStrings($handle);
         $replay->keyFrames = self::readKeyFrames($handle);
-        $replay->frameData = self::readFrames($handle);
+        $replay->frameData = self::readFrameData($handle);
         $replay->log = self::readLog($handle);
         $replay->ticks = self::readTicks($handle);
         $replay->packages = self::readStrings($handle);
@@ -45,9 +45,10 @@ class Parser
         $replay->names = self::readStrings($handle);
         $replay->classes = self::readClasses($handle);
         $replay->propertyTree = self::readPropertyTree($handle);
-        $replay->cache = self::getCache($replay);
 
         fclose($handle);
+
+        $replay->buildCache();
 
         return $replay;
     }
@@ -134,8 +135,9 @@ class Parser
 
     /**
      * @param resource $handle
+     * @return binary string
      */
-    public static function readFrames($handle)
+    public static function readFrameData($handle)
     {
         $count = self::readInt($handle, 4);
         return fread($handle, $count);
@@ -225,49 +227,6 @@ class Parser
     }
 
     /**
-     * @param Replay $replay
-     * @return array
-     */
-    public static function getCache($replay)
-    {
-        $cache = [];
-        foreach ($replay->propertyTree as $branch) {
-            $cache[$branch->classId] = [
-                'class' => $replay->classes[$branch->classId],
-                'propertyMap' => self::propertyMapForBranch(
-                    $replay,
-                    $branch->id ? $branch->id : $branch->parentId
-                )
-            ];
-        }
-        return $cache;
-    }
-
-    /**
-     * Returns the full property map for the given branch ID.
-     *
-     * @param Replay $replay
-     * @param int $branch_id
-     * @return array
-     */
-    public static function propertyMapForBranch($replay, $branch_id)
-    {
-        foreach ($replay->propertyTree as $branch) {
-            if ($branch->id == $branch_id) {
-                $properties = [];
-                if ($branch->parentId) {
-                    $properties = self::propertyMapForBranch($replay, $branch->parentId);
-                }
-                foreach ($branch->propertyMap as $objectId => $networkId) {
-                    $properties[$networkId] = $replay->objects[$objectId];
-                }
-                return $properties;
-            }
-        }
-        return [];
-    }
-
-    /**
      * @param resource $handle
      * @param int $length
      * @return int
@@ -278,15 +237,18 @@ class Parser
             1 => 'C', // unsigned char
             2 => 'v', // unsigned short (16-bit little endian)
             4 => 'V', // unsigned long (32-bit little endian)
-            8 => 'V2', // unsigned long long (64-bit little endian)
+            8 => 'H*', // binary string
         ];
         if (!array_key_exists($length, $formats)) {
-            die('No format found for length: ' . $length);
+            throw new \Exception('No int format found for length: ' . $length);
         }
         $format = $formats[$length];
         $data = fread($handle, $length);
-        $value = unpack($format, $data);
-        return $value[1];
+        $value = unpack($format, $data)[1];
+        if ($format == 'H*') {
+            return BinaryReader::asInt(BinaryReader::asBits($value));
+        }
+        return $value;
     }
 
     /**
@@ -301,12 +263,12 @@ class Parser
             8 => 'd', // double
         ];
         if (!array_key_exists($length, $formats)) {
-            die('No format found for length: ' . $length);
+            throw new \Exception('No float format found for length: ' . $length);
         }
         $format = $formats[$length];
         $data = fread($handle, $length);
-        $value = unpack($format, $data);
-        return $value[1];
+        $value = unpack($format, $data)[1];
+        return $value;
     }
 
     /**

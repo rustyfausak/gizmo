@@ -30,7 +30,7 @@ class Replay
     public $propertyTree;
     /* @var array map int class ID to array */
     public $cache;
-    /* @var mixed binary data */
+    /* @var binary string */
     public $frameData;
 
     /**
@@ -46,5 +46,45 @@ class Replay
             }
         }
         return $default;
+    }
+
+    /**
+     * Builds the network cache containing the class IDs, names and property
+     * maps.
+     */
+    public function buildCache()
+    {
+        $this->cache = [];
+        foreach ($this->propertyTree as $branch) {
+            $this->cache[$branch->classId] = [
+                'class' => $this->classes[$branch->classId],
+                'propertyMap' => $this->getPropertyMapForBranch(
+                    $branch->id ? $branch->id : $branch->parentId
+                )
+            ];
+        }
+    }
+
+    /**
+     * Returns the full property map for the given branch ID.
+     *
+     * @param int $branch_id
+     * @return array
+     */
+    public function getPropertyMapForBranch($branch_id)
+    {
+        foreach ($this->propertyTree as $branch) {
+            if ($branch->id == $branch_id) {
+                $properties = [];
+                if ($branch->parentId) {
+                    $properties = self::getPropertyMapForBranch($branch->parentId);
+                }
+                foreach ($branch->propertyMap as $objectId => $networkId) {
+                    $properties[$networkId] = $this->objects[$objectId];
+                }
+                return $properties;
+            }
+        }
+        return [];
     }
 }

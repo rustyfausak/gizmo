@@ -126,4 +126,43 @@ class BinaryReader
         }
         return $val;
     }
+
+    /**
+     * @param binary string $data
+     * @return string
+     */
+    public static function asBits($data, $little_endian = true)
+    {
+        $str = '';
+        for ($i = 0; $i < strlen($data); $i++) {
+            $chr = substr($data, $i, 1);
+            $str .= sprintf("%04b", hexdec($chr));
+        }
+        if ($little_endian) {
+            $str = self::swapEndian($str);
+        }
+        return $str;
+    }
+
+    /**
+     * Swaps the endian-ness of the bytes in the given bits.
+     *
+     * @param string $bits
+     * @return string
+     */
+    public static function swapEndian($bits)
+    {
+        $swap = '';
+        for ($j = 0; $j < strlen($bits); $j += 8) {
+            for ($i = 7; $i >= 0; $i--) {
+                if (strlen($bits) - 1 < $i + $j) {
+                    $swap .= '0';
+                }
+                else {
+                    $swap .= $bits[$i + $j];
+                }
+            }
+        }
+        return $swap;
+    }
 }
