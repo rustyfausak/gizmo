@@ -5,6 +5,8 @@ namespace Gizmo;
 class Parser
 {
     /**
+     * Parses the given file path as a replay and returns a Replay.
+     *
      * @param string $path
      * @return Replay
      */
@@ -22,18 +24,18 @@ class Parser
         $handle = fopen($path, 'rb');
 
         // Size of properties section
-        self::readInt($handle, 4);
+        self::readInt($handle);
         // CRC
-        self::readInt($handle, 4);
+        self::readInt($handle);
 
-        $replay->version = self::readInt($handle, 4) . '.' . self::readInt($handle, 4);
+        $replay->version = self::readInt($handle) . '.' . self::readInt($handle);
         $replay->type = self::readString($handle);
         $replay->properties = self::readProperties($handle);
 
         // Size of remaining data
-        self::readInt($handle, 4);
+        self::readInt($handle);
         // Unknown 4 byte separator
-        self::readInt($handle, 4);
+        self::readInt($handle);
 
         $replay->levels = self::readStrings($handle);
         $replay->keyFrames = self::readKeyFrames($handle);
@@ -101,7 +103,7 @@ class Parser
                 break;
             case 'ArrayProperty':
                 fseek($handle, 8, 1);
-                $length = self::readInt($handle, 4);
+                $length = self::readInt($handle);
                 $property->value = [];
                 foreach (range(1, $length) as $i) {
                     $property->value[] = self::readProperties($handle);
@@ -122,12 +124,12 @@ class Parser
     public static function readKeyFrames($handle)
     {
         $keyFrames = [];
-        $count = self::readInt($handle, 4);
+        $count = self::readInt($handle);
         for ($i = 0; $i < $count; $i++) {
             $keyFrames[] = new KeyFrame(
                 self::readFloat($handle, 4),
-                self::readInt($handle, 4),
-                self::readInt($handle, 4)
+                self::readInt($handle),
+                self::readInt($handle)
             );
         }
         return $keyFrames;
@@ -139,8 +141,8 @@ class Parser
      */
     public static function readFrameData($handle)
     {
-        $count = self::readInt($handle, 4);
-        return fread($handle, $count);
+        $count = self::readInt($handle);
+        return unpack('H*', fread($handle, $count));
     }
 
     /**
@@ -150,10 +152,10 @@ class Parser
     public static function readLog($handle)
     {
         $messages = [];
-        $count = self::readInt($handle, 4);
+        $count = self::readInt($handle);
         for ($i = 0; $i < $count; $i++) {
             $messages[] = new Message(
-                self::readInt($handle, 4),
+                self::readInt($handle),
                 self::readString($handle),
                 self::readString($handle)
             );
@@ -168,11 +170,11 @@ class Parser
     public static function readTicks($handle)
     {
         $ticks = [];
-        $count = self::readInt($handle, 4);
+        $count = self::readInt($handle);
         for ($i = 0; $i < $count; $i++) {
             $ticks[] = new Tick(
                 self::readString($handle),
-                self::readInt($handle, 4)
+                self::readInt($handle)
             );
         }
         return $ticks;
@@ -185,10 +187,10 @@ class Parser
     public static function readClasses($handle)
     {
         $classes = [];
-        $count = self::readInt($handle, 4);
+        $count = self::readInt($handle);
         for ($i = 0; $i < $count; $i++) {
             $class = self::readString($handle);
-            $id = self::readInt($handle, 4);
+            $id = self::readInt($handle);
             $classes[$id] = $class;
         }
         return $classes;
@@ -201,7 +203,7 @@ class Parser
     public static function readPropertyTree($handle)
     {
         $propertyBranches = [];
-        $count = self::readInt($handle, 4);
+        $count = self::readInt($handle);
         for ($i = 0; $i < $count; $i++) {
             $propertyBranches[] = self::readPropertyBranch($handle);
         }
@@ -215,13 +217,13 @@ class Parser
     public static function readPropertyBranch($handle)
     {
         $propertyBranch = new PropertyBranch(
-            self::readInt($handle, 4),
-            self::readInt($handle, 4),
-            self::readInt($handle, 4)
+            self::readInt($handle),
+            self::readInt($handle),
+            self::readInt($handle)
         );
-        $count = self::readInt($handle, 4);
+        $count = self::readInt($handle);
         for ($i = 0; $i < $count; $i++) {
-            $propertyBranch->propertyMap[self::readInt($handle, 4)] = self::readInt($handle, 4);
+            $propertyBranch->propertyMap[self::readInt($handle)] = self::readInt($handle);
         }
         return $propertyBranch;
     }
@@ -231,7 +233,7 @@ class Parser
      * @param int $length
      * @return int
      */
-    public static function readInt($handle, $length)
+    public static function readInt($handle, $length = 4)
     {
         $formats = [
             1 => 'C', // unsigned char
@@ -243,8 +245,7 @@ class Parser
             throw new \Exception('No int format found for length: ' . $length);
         }
         $format = $formats[$length];
-        $data = fread($handle, $length);
-        $value = unpack($format, $data)[1];
+        $value = unpack($format, fread($handle, $length))[1];
         if ($format == 'H*') {
             return BinaryReader::asInt(BinaryReader::asBits($value));
         }
@@ -266,8 +267,7 @@ class Parser
             throw new \Exception('No float format found for length: ' . $length);
         }
         $format = $formats[$length];
-        $data = fread($handle, $length);
-        $value = unpack($format, $data)[1];
+        $value = unpack($format, fread($handle, $length))[1];
         return $value;
     }
 
@@ -279,7 +279,7 @@ class Parser
     public static function readString($handle, $length = null)
     {
         if ($length === null) {
-            $length = self::readInt($handle, 4);
+            $length = self::readInt($handle);
         }
         return substr(fread($handle, $length), 0, -1);
     }
@@ -291,9 +291,9 @@ class Parser
     public static function readStrings($handle)
     {
         $arr = [];
-        $count = self::readInt($handle, 4);
+        $count = self::readInt($handle);
         for ($i = 0; $i < $count; $i++) {
-            $length = self::readInt($handle, 4);
+            $length = self::readInt($handle);
             $arr[] = self::readString($handle, $length);
         }
         return $arr;
