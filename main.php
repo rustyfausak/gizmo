@@ -3,7 +3,7 @@
 $loader = require __DIR__ . '/vendor/autoload.php';
 
 if (!isset($argv[1])) {
-	die('Usage: ' . basename(__FILE__) . " <replay file>\n\n");
+    die('Usage: ' . basename(__FILE__) . " <replay file>\n\n");
 }
 
 $replay = Gizmo\Parser::parse($argv[1]);
