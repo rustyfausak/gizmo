@@ -4,6 +4,10 @@ namespace Gizmo;
 
 class Replay
 {
+    /* @var string */
+    public $version;
+    /* @var string */
+    public $type;
     /* @var array of Property */
     public $properties;
     /* @var array of string */
@@ -11,20 +15,22 @@ class Replay
     /* @var array of KeyFrame */
     public $keyFrames;
     /* @var array of Message */
-    public $debugLog;
+    public $log;
     /* @var array of Tick */
     public $ticks;
     /* @var array of string */
     public $packages;
-    /* @var array of string */
+    /* @var array map int object ID to string name */
     public $objects;
     /* @var array of string */
     public $names;
-    /* @var array */
-    public $classMap;
-    /* @var array of ClassNetCacheItem */
-    public $classNetCache;
-    /* @var string */
+    /* @var array map int class ID to string name */
+    public $classes;
+    /* @var array of PropertyBranch */
+    public $propertyTree;
+    /* @var array map int class ID to array */
+    public $cache;
+    /* @var mixed binary data */
     public $frameData;
 
     /**

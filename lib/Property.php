@@ -10,4 +10,11 @@ class Property
     public $type;
     /* @var mixed */
     public $value;
+
+    /**
+     */
+    public function __construct()
+    {
+        //
+    }
 }

@@ -12,36 +12,40 @@ class Parser
     {
         $replay = new Replay();
 
-        if (!file_exists($path)) {
-            throw new \Exception('Cannot parse file "' . $path . '"');
+        if (!is_readable($path)) {
+            throw new \Exception('Cannot read replay file.');
+        }
+        if (!filesize($path)) {
+            throw new \Exception('No data in replay file.');
         }
 
         $handle = fopen($path, 'rb');
 
-        // Skip unknown data
-        fseek($handle, 16, 1);
+        // Size of properties section
+        self::readInt($handle, 4);
+        // CRC
+        self::readInt($handle, 4);
 
-        // Skip "TAGame.Replay_Soccar_TA"
-        self::readString($handle);
-
+        $replay->version = self::readInt($handle, 4) . '.' . self::readInt($handle, 4);
+        $replay->type = self::readString($handle);
         $replay->properties = self::readProperties($handle);
 
-        // Skip unknown data
-        fseek($handle, 8, 1);
+        // Size of remaining data
+        self::readInt($handle, 4);
+        // Unknown 4 byte separator
+        self::readInt($handle, 4);
 
         $replay->levels = self::readStrings($handle);
         $replay->keyFrames = self::readKeyFrames($handle);
-        if (sizeof($replay->keyFrames)) {
-            $replay->frameData = self::readFrames($handle);
-        }
-        $replay->debugLog = self::readDebugLog($handle);
+        $replay->frameData = self::readFrames($handle);
+        $replay->log = self::readLog($handle);
         $replay->ticks = self::readTicks($handle);
         $replay->packages = self::readStrings($handle);
         $replay->objects = self::readStrings($handle);
-        $replay->objects["_"] = null; // Force string keys
         $replay->names = self::readStrings($handle);
-        $replay->classMap = self::readClassMap($handle);
-        $replay->classNetCache = self::readClassNetCache($handle);
+        $replay->classes = self::readClasses($handle);
+        $replay->propertyTree = self::readPropertyTree($handle);
+        $replay->cache = self::getCache($replay);
 
         fclose($handle);
 
@@ -141,7 +145,7 @@ class Parser
      * @param resource $handle
      * @return array of Message
      */
-    public static function readDebugLog($handle)
+    public static function readLog($handle)
     {
         $messages = [];
         $count = self::readInt($handle, 4);
@@ -176,51 +180,91 @@ class Parser
      * @param resource $handle
      * @return array
      */
-    public static function readClassMap($handle)
+    public static function readClasses($handle)
     {
-        $classMap = [];
+        $classes = [];
         $count = self::readInt($handle, 4);
         for ($i = 0; $i < $count; $i++) {
             $class = self::readString($handle);
             $id = self::readInt($handle, 4);
-            $classMap[$id] = $class;
+            $classes[$id] = $class;
         }
-        return $classMap;
+        return $classes;
     }
 
     /**
      * @param resource $handle
-     * @return array of ClassNetCacheItem
+     * @return array of PropertyBranch
      */
-    public static function readClassNetCache($handle)
+    public static function readPropertyTree($handle)
     {
-        $classNetCacheItems = [];
+        $propertyBranches = [];
         $count = self::readInt($handle, 4);
         for ($i = 0; $i < $count; $i++) {
-            $classNetCacheItems[] = self::readClassNetCacheItem($handle);
+            $propertyBranches[] = self::readPropertyBranch($handle);
         }
-        return $classNetCacheItems;
+        return $propertyBranches;
     }
 
     /**
      * @param resource $handle
-     * @return ClassNetCacheItem
+     * @return PropertyBranch
      */
-    public static function readClassNetCacheItem($handle)
+    public static function readPropertyBranch($handle)
     {
-        $classNetCacheItem = new ClassNetCacheItem(
+        $propertyBranch = new PropertyBranch(
             self::readInt($handle, 4),
             self::readInt($handle, 4),
             self::readInt($handle, 4)
         );
-        $property_map_length = self::readInt($handle, 4);
-        for ($i = 0; $i < $property_map_length; $i++) {
-            $classNetCacheItem->propertyMap[] = new PropertyMapItem(
-                self::readInt($handle, 4),
-                self::readInt($handle, 4)
-            );
+        $count = self::readInt($handle, 4);
+        for ($i = 0; $i < $count; $i++) {
+            $propertyBranch->propertyMap[self::readInt($handle, 4)] = self::readInt($handle, 4);
         }
-        return $classNetCacheItem;
+        return $propertyBranch;
+    }
+
+    /**
+     * @param Replay $replay
+     * @return array
+     */
+    public static function getCache($replay)
+    {
+        $cache = [];
+        foreach ($replay->propertyTree as $branch) {
+            $cache[$branch->classId] = [
+                'class' => $replay->classes[$branch->classId],
+                'propertyMap' => self::propertyMapForBranch(
+                    $replay,
+                    $branch->id ? $branch->id : $branch->parentId
+                )
+            ];
+        }
+        return $cache;
+    }
+
+    /**
+     * Returns the full property map for the given branch ID.
+     *
+     * @param Replay $replay
+     * @param int $branch_id
+     * @return array
+     */
+    public static function propertyMapForBranch($replay, $branch_id)
+    {
+        foreach ($replay->propertyTree as $branch) {
+            if ($branch->id == $branch_id) {
+                $properties = [];
+                if ($branch->parentId) {
+                    $properties = self::propertyMapForBranch($replay, $branch->parentId);
+                }
+                foreach ($branch->propertyMap as $objectId => $networkId) {
+                    $properties[$networkId] = $replay->objects[$objectId];
+                }
+                return $properties;
+            }
+        }
+        return [];
     }
 
     /**
