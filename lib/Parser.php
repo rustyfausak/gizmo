@@ -39,7 +39,7 @@ class Parser
 
         $replay->levels = self::readStrings($handle);
         $replay->keyFrames = self::readKeyFrames($handle);
-        $replay->frameData = self::readFrameData($handle);
+        $frameData = self::readFrameData($handle);
         $replay->log = self::readLog($handle);
         $replay->ticks = self::readTicks($handle);
         $replay->packages = self::readStrings($handle);
@@ -52,7 +52,54 @@ class Parser
 
         $replay->buildCache();
 
+        $replay->frames = self::parseFrames($replay, $frameData);
+
         return $replay;
+    }
+
+    /**
+     * @param Replay $replay
+     * @param binary string $frameData
+     */
+    public static function parseFrames($replay, $frameData)
+    {
+        $frames = [];
+        $br = new BinaryReader(BinaryReader::asBits($frameData), false);
+        $frames[] = self::readFrame($replay, $br);
+        return $frames;
+    }
+
+    /**
+     * @param Replay $replay
+     * @param BinaryReader $br
+     * @return Frame
+     */
+    public static function readFrame($replay, $br)
+    {
+        $frame = new Frame();
+        $frame->time = $br->readFloat();
+        $frame->diff = $br->readFloat();
+        while ($br->readBit() == 1) {
+            $rep = new Replication();
+            $rep->actorId = bindec($br->readBits(10));
+            $rep->channelState = $br->readBit();
+            if (!$rep->channelState) {
+                continue;
+            }
+            $rep->actorState = $br->readBit();
+            if ($rep->actorState) {
+                // New actor
+                $rep->unknown1 = $br->readBit();
+                $rep->actorTypeId = bindec(strrev($br->readBits(8)));
+                $rep->actorType = $replay->objects[$rep->actorTypeId];
+            }
+            else {
+                // Existing actor
+            }
+            $frame->replications[] = $rep;
+            break;
+        }
+        return $frame;
     }
 
     /**
@@ -142,7 +189,7 @@ class Parser
     public static function readFrameData($handle)
     {
         $count = self::readInt($handle);
-        return unpack('H*', fread($handle, $count));
+        return unpack('H*', fread($handle, $count))[1];
     }
 
     /**
@@ -247,7 +294,7 @@ class Parser
         $format = $formats[$length];
         $value = unpack($format, fread($handle, $length))[1];
         if ($format == 'H*') {
-            return BinaryReader::asInt(BinaryReader::asBits($value));
+            return bindec(strrev(BinaryReader::asBits($value)));
         }
         return $value;
     }

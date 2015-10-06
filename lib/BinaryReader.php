@@ -113,33 +113,21 @@ class BinaryReader
     }
 
     /**
-     * Returns the unsigned int representation of the given bit string.
-     *
-     * @param string $bits
-     * @return int
-     */
-    public static function asInt($bits)
-    {
-        $val = 0;
-        for ($i = 0; $i < strlen($bits); $i++) {
-            $val += $bits[$i] ? pow(2, $i) : 0;
-        }
-        return $val;
-    }
-
-    /**
      * @param binary string $data
      * @return string
      */
     public static function asBits($data, $little_endian = true)
     {
         $str = '';
-        for ($i = 0; $i < strlen($data); $i++) {
-            $chr = substr($data, $i, 1);
-            $str .= sprintf("%04b", hexdec($chr));
-        }
-        if ($little_endian) {
-            $str = self::swapEndian($str);
+        for ($i = 0; $i < strlen($data); $i += 2) {
+            $chr = substr($data, $i, 2);
+            if ($little_endian) {
+                $str .= strrev(sprintf("%08b", hexdec($chr)));
+            }
+            else {
+                $str .= sprintf("%08b", hexdec($chr));
+            }
+            continue;
         }
         return $str;
     }
