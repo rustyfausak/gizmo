@@ -21,6 +21,4 @@ file_put_contents(
 	json_encode($replay, JSON_PRETTY_PRINT)
 );
 
-print_r($replay->frames);
-
 print "Done in " . sprintf("%01.3f", round(microtime(true) - $start, 3)) . "\n\n";

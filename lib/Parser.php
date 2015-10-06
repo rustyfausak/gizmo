@@ -51,8 +51,7 @@ class Parser
         fclose($handle);
 
         $replay->buildCache();
-
-        $replay->frames = self::parseFrames($replay, $frameData);
+        $replay->frames = self::deserializeFrames($replay, $frameData);
 
         return $replay;
     }
@@ -61,45 +60,15 @@ class Parser
      * @param Replay $replay
      * @param binary string $frameData
      */
-    public static function parseFrames($replay, $frameData)
+    public static function deserializeFrames($replay, $frameData)
     {
         $frames = [];
         $br = new BinaryReader(BinaryReader::asBits($frameData), false);
-        $frames[] = self::readFrame($replay, $br);
-        return $frames;
-    }
-
-    /**
-     * @param Replay $replay
-     * @param BinaryReader $br
-     * @return Frame
-     */
-    public static function readFrame($replay, $br)
-    {
-        $frame = new Frame();
-        $frame->time = $br->readFloat();
-        $frame->diff = $br->readFloat();
-        while ($br->readBit() == 1) {
-            $rep = new Replication();
-            $rep->actorId = bindec($br->readBits(10));
-            $rep->channelState = $br->readBit();
-            if (!$rep->channelState) {
-                continue;
-            }
-            $rep->actorState = $br->readBit();
-            if ($rep->actorState) {
-                // New actor
-                $rep->unknown1 = $br->readBit();
-                $rep->actorTypeId = bindec(strrev($br->readBits(8)));
-                $rep->actorType = $replay->objects[$rep->actorTypeId];
-            }
-            else {
-                // Existing actor
-            }
-            $frame->replications[] = $rep;
-            break;
+        foreach ($replay->keyFrames as $keyFrame) {
+            $br->seek($keyFrame->position);
+            $frames[] = Frame::deserialize($br);
         }
-        return $frame;
+        return $frames;
     }
 
     /**

@@ -153,4 +153,20 @@ class BinaryReader
         }
         return $swap;
     }
+
+    /**
+     * @param string $bits
+     * @return string
+     */
+    public static function pretty($bits)
+    {
+        $tmp = '';
+        for ($i = 0; $i < strlen($bits); $i++) {
+            $tmp .= substr($bits, $i, 1);
+            if (($i + 1) % 8 == 0) {
+                $tmp .= ' ';
+            }
+        }
+        return $tmp;
+    }
 }
