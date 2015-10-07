@@ -35,8 +35,7 @@ class Replication
             $r->actorObjectId = bindec(strrev($br->readBits(8)));
             $actor = $replay->createActor($r->actorId, $r->actorObjectId, $frameNumber);
             $actor->deserializeInit($br);
-            print "Actor #{$actor->id} {$actor->archetype} {$actor->class}\n";
-            print $actor->init . "\n";
+            print "Actor #{$actor->id} {$actor->class} R:{$actor->rotator} P:{$actor->position} O:{$actor->orientation}\n";
         }
         else {
             // Existing actor

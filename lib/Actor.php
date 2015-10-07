@@ -14,6 +14,12 @@ class Actor
     public $archetype;
     /* @var string */
     public $class;
+    /* @var Vector */
+    public $rotator;
+    /* @var Vector */
+    public $position;
+    /* @var Vector */
+    public $orientation;
     /* @var array of ActorProperty */
     public $properties;
 
@@ -81,33 +87,44 @@ class Actor
      */
     public function deserializeInit($br)
     {
+        $found = false;
+        foreach ([
+            'TheWorld:PersistentLevel.CrowdActor_TA_',
+            'TheWorld:PersistentLevel.CrowdManager_TA_',
+        ] as $substr) {
+            if (strpos($this->class, $substr) !== false) {
+                $this->rotator = Vector::deserializeByteVector($br);
+                return;
+            }
+        }
         switch ($this->class) {
             case 'TAGame.PRI_TA':
             case 'TAGame.GRI_TA':
             case 'TAGame.Team_Soccar_TA':
             case 'TAGame.GameEvent_SoccarPrivate_TA':
             case 'TAGame.GameEvent_SoccarSplitscreen_TA':
-                $this->init = $br->readBits(35);
-                break;
-            case 'TAGame.Ball_TA':
-                $this->init = $br->readBits(55);
-                break;
-            case 'TAGame.Car_TA':
-                $this->init = $br->readBits(80);
-                break;
+                $this->rotator = Vector::deserializeByteVector($br);
+                $unknown = $br->readBits(11);
+                return;
+            case 'TAGame.CarComponent_Jump_TA':
             case 'TAGame.CarComponent_Dodge_TA':
             case 'TAGame.CarComponent_Boost_TA':
-            case 'TAGame.CarComponent_Jump_TA':
             case 'TAGame.CarComponent_DoubleJump_TA':
             case 'TAGame.CarComponent_FlipCar_TA':
-                $this->init = $br->readBits(70);
-                break;
-            default:
-                throw new \Exception(
-                    'Could not deserialize actor class "' . $this->class . '".' . "\n"
-                    . $br->readBits(200)
-                );
+                $this->rotator = Vector::deserializeByteVector($br);
+                $this->position = Vector::deserialize($br);
+                return;
+            case 'TAGame.Ball_TA':
+            case 'TAGame.Car_TA':
+                $this->rotator = Vector::deserializeByteVector($br);
+                $this->position = Vector::deserialize($br);
+                $this->orientation = Vector::deserializeOrientation($br);
+                return;
         }
+        throw new \Exception(
+            'Could not deserialize actor class "' . $this->class . '".' . "\n"
+            . $br->readBits(200)
+        );
     }
 
     /**
