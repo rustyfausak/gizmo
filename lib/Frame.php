@@ -12,16 +12,17 @@ class Frame
     public $replications;
 
     /**
+     * @param Replay $replay
      * @param BinaryReader $br
      * @return Frame
      */
-    public static function deserialize($br)
+    public static function deserialize($replay, $br)
     {
         $frame = new self();
         $frame->time = $br->readFloat();
         $frame->diff = $br->readFloat();
         while ($br->readBit() == 1) {
-            $frame->replications[] = Replication::deserialize($br);
+            $frame->replications[] = Replication::deserialize($replay, $br);
             break;
         }
         return $frame;

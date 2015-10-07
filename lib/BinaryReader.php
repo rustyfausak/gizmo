@@ -9,20 +9,20 @@ class BinaryReader
     /* @var int */
     public $offset;
     /* @var string */
-    public $binary_str;
+    public $bitstring;
     /* @var bool */
-    public $little_endian;
+    public $littleEndian;
 
     /**
-     * @param string $binary_str
-     * @param bool $little_endian
+     * @param string $bitstring
+     * @param bool $littleEndian
      */
-    public function __construct($binary_str = '', $little_endian = true)
+    public function __construct($bitstring = '', $littleEndian = true)
     {
         $this->position = 0;
         $this->offset = 0;
-        $this->binary_str = $binary_str;
-        $this->little_endian = $little_endian;
+        $this->bitstring = $bitstring;
+        $this->littleEndian = $littleEndian;
     }
 
     /**
@@ -32,7 +32,7 @@ class BinaryReader
      */
     public function size()
     {
-        return strlen($this->binary_str);
+        return strlen($this->bitstring);
     }
 
     /**
@@ -42,7 +42,7 @@ class BinaryReader
      */
     public function append($bits)
     {
-        $this->binary_str .= $bits;
+        $this->bitstring .= $bits;
     }
 
     /**
@@ -79,7 +79,7 @@ class BinaryReader
     {
         $this->seek($this->position);
         $this->position++;
-        return substr($this->binary_str, $this->offset, 1);
+        return substr($this->bitstring, $this->offset, 1);
     }
 
     /**
@@ -90,7 +90,7 @@ class BinaryReader
     public function seek($position)
     {
         $this->position = $position;
-        if ($this->little_endian) {
+        if ($this->littleEndian) {
             $this->offset = ceil(($position + 1) / 8) * 8 - 1 - ($position % 8);
         } else {
             $this->offset = $this->position;
@@ -116,12 +116,12 @@ class BinaryReader
      * @param binary string $data
      * @return string
      */
-    public static function asBits($data, $little_endian = true)
+    public static function asBits($data, $littleEndian = true)
     {
         $str = '';
         for ($i = 0; $i < strlen($data); $i += 2) {
             $chr = substr($data, $i, 2);
-            if ($little_endian) {
+            if ($littleEndian) {
                 $str .= strrev(sprintf("%08b", hexdec($chr)));
             }
             else {

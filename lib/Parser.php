@@ -66,7 +66,7 @@ class Parser
         $br = new BinaryReader(BinaryReader::asBits($frameData), false);
         foreach ($replay->keyFrames as $keyFrame) {
             $br->seek($keyFrame->position);
-            $frames[] = Frame::deserialize($br);
+            $frames[] = Frame::deserialize($replay, $br);
         }
         return $frames;
     }
@@ -218,12 +218,12 @@ class Parser
      */
     public static function readPropertyTree($handle)
     {
-        $propertyBranches = [];
+        $branches = [];
         $count = self::readInt($handle);
         for ($i = 0; $i < $count; $i++) {
-            $propertyBranches[] = self::readPropertyBranch($handle);
+            $branches[] = self::readPropertyBranch($handle);
         }
-        return $propertyBranches;
+        return $branches;
     }
 
     /**
@@ -232,16 +232,16 @@ class Parser
      */
     public static function readPropertyBranch($handle)
     {
-        $propertyBranch = new PropertyBranch(
+        $branch = new PropertyBranch(
             self::readInt($handle),
             self::readInt($handle),
             self::readInt($handle)
         );
         $count = self::readInt($handle);
         for ($i = 0; $i < $count; $i++) {
-            $propertyBranch->propertyMap[self::readInt($handle)] = self::readInt($handle);
+            $branch->propertyMap[self::readInt($handle)] = self::readInt($handle);
         }
-        return $propertyBranch;
+        return $branch;
     }
 
     /**

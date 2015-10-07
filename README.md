@@ -11,4 +11,4 @@ A Rocket League replay parser.
 
     php main.php path/to/replay/4EF6AF534E92FE3B2BBEB1A8C46896B8.replay
 
-  View the output saved in `results/4EF6AF534E92FE3B2BBEB1A8C46896B8.json`
+View the output saved in `results/4EF6AF534E92FE3B2BBEB1A8C46896B8.json`

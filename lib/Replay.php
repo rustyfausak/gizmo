@@ -30,8 +30,15 @@ class Replay
     public $propertyTree;
     /* @var array map int class ID to array */
     public $cache;
-    /* @var binary string */
-    public $frameData;
+    /* @var array map int actor ID to array Actors */
+    public $actors;
+
+    /**
+     */
+    public function __construct()
+    {
+        $this->actors = [];
+    }
 
     /**
      * @param string $name
@@ -66,15 +73,44 @@ class Replay
     }
 
     /**
+     * @param int $actorId
+     * @param int $objectId
+     * @return Actor
+     */
+    public function createActor($actorId, $objectId)
+    {
+        $actor = new Actor(
+            $actorId,
+            $this->objects[$objectId]
+        );
+        $classObjectId = array_search($actor->class, $this->objects);
+        if ($classObjectId && array_key_exists($classObjectId, $this->cache)) {
+           foreach ($this->cache[$classObjectId]['propertyMap'] as $propertyId => $propertyClass) {
+                $actor->properties[] = new ActorProperty($propertyId, $propertyClass);
+           }
+        }
+        $this->actors[$actor->id] = $actor;
+        return $actor;
+    }
+
+    /**
+     * @param int $actorId
+     */
+    public function destroyActor($actorId)
+    {
+        unset($actors[$actorId]);
+    }
+
+    /**
      * Returns the full property map for the given branch ID.
      *
-     * @param int $branch_id
+     * @param int $branchId
      * @return array
      */
-    public function getPropertyMapForBranch($branch_id)
+    public function getPropertyMapForBranch($branchId)
     {
         foreach ($this->propertyTree as $branch) {
-            if ($branch->id == $branch_id) {
+            if ($branch->id == $branchId) {
                 $properties = [];
                 if ($branch->parentId) {
                     $properties = self::getPropertyMapForBranch($branch->parentId);

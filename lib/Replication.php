@@ -11,35 +11,35 @@ class Replication
     /* @var bool */
     public $actorState;
     /* @var int */
-    public $actorTypeId;
-    /* @var Vector */
-    public $vector;
+    public $actorObjectId;
 
     /**
+     * @param Replay $replay
      * @param BinaryReader $br
      * @return Replication
      */
-    public static function deserialize($br)
+    public static function deserialize($replay, $br)
     {
         $r = new self();
         $r->actorId = bindec($br->readBits(10));
         $r->channelState = $br->readBit();
         if (!$r->channelState) {
+            $replay->destroyActor($r->actorId);
             return $r;
         }
         $r->actorState = $br->readBit();
         if ($r->actorState) {
             // New actor
-            $r->unknown1 = $br->readBit();
-            $r->actorTypeId = bindec(strrev($br->readBits(8)));
-            $r->vector = Vector::deserialize($br);
-            $r->next = $br->readBits(32);
-            /*$r->pitch = $br->readBits(8);
-            $r->yaw = $br->readBits(8);
-            $r->roll = $br->readBits(8);*/
+            $r->propertyFlag = $br->readBit(); // seems to always be 0 since we are creating a new actor
+            $r->actorObjectId = bindec(strrev($br->readBits(8)));
+            $actor = $replay->createActor($r->actorId, $r->actorObjectId);
         }
         else {
             // Existing actor
+            while ($br->readBit()) {
+                ActorProperty::deserialize($replay, $br);
+                break;
+            }
         }
         return $r;
     }
