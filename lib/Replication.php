@@ -16,15 +16,16 @@ class Replication
     /**
      * @param Replay $replay
      * @param BinaryReader $br
+     * @param int $frameNumber
      * @return Replication
      */
-    public static function deserialize($replay, $br)
+    public static function deserialize($replay, $br, $frameNumber)
     {
         $r = new self();
-        $r->actorId = bindec($br->readBits(10));
+        $r->actorId = bindec(strrev($br->readBits(10)));
         $r->channelState = $br->readBit();
         if (!$r->channelState) {
-            $replay->destroyActor($r->actorId);
+            $replay->closeActor($r->actorId, $frameNumber);
             return $r;
         }
         $r->actorState = $br->readBit();
@@ -32,13 +33,19 @@ class Replication
             // New actor
             $r->propertyFlag = $br->readBit(); // seems to always be 0 since we are creating a new actor
             $r->actorObjectId = bindec(strrev($br->readBits(8)));
-            $actor = $replay->createActor($r->actorId, $r->actorObjectId);
+            $actor = $replay->createActor($r->actorId, $r->actorObjectId, $frameNumber);
+            $actor->deserializeInit($br);
+            print "Actor #{$actor->id} {$actor->archetype} {$actor->class}\n";
+            print $actor->init . "\n";
         }
         else {
             // Existing actor
+            print "existing actor\n";
+            $actor = $replay->getActor($r->actorId);
             while ($br->readBit()) {
-                ActorProperty::deserialize($replay, $br);
-                break;
+                $actor->updateProperty(
+                    ActorProperty::deserialize($replay, $br, $actor)
+                );
             }
         }
         return $r;

@@ -66,7 +66,8 @@ class Parser
         $br = new BinaryReader(BinaryReader::asBits($frameData), false);
         foreach ($replay->keyFrames as $keyFrame) {
             $br->seek($keyFrame->position);
-            $frames[] = Frame::deserialize($replay, $br);
+            $frames[] = Frame::deserialize($replay, $br, $keyFrame->frameNumber);
+            exit;
         }
         return $frames;
     }

@@ -77,11 +77,12 @@ class Replay
      * @param int $objectId
      * @return Actor
      */
-    public function createActor($actorId, $objectId)
+    public function createActor($actorId, $objectId, $frameNumber)
     {
         $actor = new Actor(
             $actorId,
-            $this->objects[$objectId]
+            $this->objects[$objectId],
+            $frameNumber
         );
         $classObjectId = array_search($actor->class, $this->objects);
         if ($classObjectId && array_key_exists($classObjectId, $this->cache)) {
@@ -89,16 +90,36 @@ class Replay
                 $actor->properties[] = new ActorProperty($propertyId, $propertyClass);
            }
         }
-        $this->actors[$actor->id] = $actor;
+        $this->actors[] = $actor;
         return $actor;
     }
 
     /**
      * @param int $actorId
+     * @return Actor
      */
-    public function destroyActor($actorId)
+    public function getActor($actorId)
     {
-        unset($actors[$actorId]);
+        foreach (array_reverse($this->actors) as $actor) {
+            if ($actor->id == $actorId) {
+                return $actor;
+            }
+        }
+        throw new \Exception('Could not find actor with ID "' . $actorId . '"');
+    }
+
+    /**
+     * @param int $actorId
+     */
+    public function closeActor($actorId, $frameNumber)
+    {
+        foreach (array_reverse($this->actors) as $actor) {
+            if ($actor->id == $actorId) {
+                $actor->close($frameNumber);
+                return;
+            }
+        }
+        $this->actors[$actorId]->close($frameNumber);
     }
 
     /**

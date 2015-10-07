@@ -14,10 +14,14 @@ class ActorProperty
     /**
      * @param Replay $replay
      * @param BinaryReader $br
+     * @param Actor $actor
      * @return ActorProperty
      */
-    public static function deserialize($replay, $br)
+    public static function deserialize($replay, $br, $actor)
     {
+        $id = bindec(strrev($br->readBits($actor->getPropertyBits())));
+        $class = $actor->properties[$id];
+        $property = new self($id, $class);
         return new self();
     }
 

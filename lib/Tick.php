@@ -7,15 +7,15 @@ class Tick
     /* @var string */
     public $type;
     /* @var int */
-    public $frame;
+    public $frameNumber;
 
     /**
      * @param string $type
-     * @param int $frame
+     * @param int $frameNumber
      */
-    public function __construct($type, $frame)
+    public function __construct($type, $frameNumber)
     {
         $this->type = $type;
-        $this->frame = $frame;
+        $this->frameNumber = $frameNumber;
     }
 }

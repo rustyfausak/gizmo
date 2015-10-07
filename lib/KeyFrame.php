@@ -7,19 +7,19 @@ class KeyFrame
     /* @var float */
     public $time;
     /* @var int */
-    public $frame;
+    public $frameNumber;
     /* @var int */
     public $position;
 
     /**
      * @param float $time
-     * @param int $frame
+     * @param int $frameNumber
      * @param int $position
      */
-    public function __construct($time, $frame, $position)
+    public function __construct($time, $frameNumber, $position)
     {
         $this->time = $time;
-        $this->frame = $frame;
+        $this->frameNumber = $frameNumber;
         $this->position = $position;
     }
 }
