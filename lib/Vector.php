@@ -10,11 +10,11 @@ class Vector
      */
     public static function deserialize($br)
     {
-        $bits = bindec(strrev($br->readBits(4)));
+        $bits = $br->readInt(4);
         $bias = 1 << ($bits + 1);
-        $x = bindec(strrev($br->readBits($bits + 2))) - $bias;
-        $y = bindec(strrev($br->readBits($bits + 2))) - $bias;
-        $z = bindec(strrev($br->readBits($bits + 2))) - $bias;
+        $x = $br->readInt($bits + 2) - $bias;
+        $y = $br->readInt($bits + 2) - $bias;
+        $z = $br->readInt($bits + 2) - $bias;
         return new self($x, $y, $z);
     }
 
@@ -25,9 +25,9 @@ class Vector
     public static function deserializeByteVector($br)
     {
         return new self(
-            bindec(strrev($br->readBits(8))) / 128,
-            bindec(strrev($br->readBits(8))) / 128,
-            bindec(strrev($br->readBits(8))) / 128
+            $br->readInt(8) / 128,
+            $br->readInt(8) / 128,
+            $br->readInt(8) / 128
         );
     }
 
@@ -41,13 +41,13 @@ class Vector
         $y = 0;
         $r = 0;
         if ($br->readBit()) {
-            $p = bindec(strrev($br->readBits(8)));
+            $p = $br->readInt(8);
         }
         if ($br->readBit()) {
-            $y = bindec(strrev($br->readBits(8)));
+            $y = $br->readInt(8);
         }
         if ($br->readBit()) {
-            $r = bindec(strrev($br->readBits(8)));
+            $r = $br->readInt(8);
         }
         return new self($p, $y, $r);
     }

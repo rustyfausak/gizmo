@@ -66,10 +66,35 @@ class Replay
             $this->cache[$branch->classId] = [
                 'class' => $this->classes[$branch->classId],
                 'propertyMap' => $this->getPropertyMapForBranch(
-                    $branch->id ? $branch->id : $branch->parentId
+                    $branch->id,
+                    $branch->classId
                 )
             ];
         }
+    }
+
+    /**
+     * Returns the full property map for the given branch ID.
+     *
+     * @param int $branchId
+     * @param int $classId
+     * @return array
+     */
+    public function getPropertyMapForBranch($branchId, $classId = null)
+    {
+        foreach ($this->propertyTree as $branch) {
+            if ($branch->id == $branchId && (!$classId || $branch->classId == $classId)) {
+                $properties = [];
+                if ($branch->parentId) {
+                    $properties = self::getPropertyMapForBranch($branch->parentId);
+                }
+                foreach ($branch->propertyMap as $objectId => $networkId) {
+                    $properties[$networkId] = $this->objects[$objectId];
+                }
+                return $properties;
+            }
+        }
+        return [];
     }
 
     /**
@@ -120,28 +145,5 @@ class Replay
             }
         }
         $this->actors[$actorId]->close($frameNumber);
-    }
-
-    /**
-     * Returns the full property map for the given branch ID.
-     *
-     * @param int $branchId
-     * @return array
-     */
-    public function getPropertyMapForBranch($branchId)
-    {
-        foreach ($this->propertyTree as $branch) {
-            if ($branch->id == $branchId) {
-                $properties = [];
-                if ($branch->parentId) {
-                    $properties = self::getPropertyMapForBranch($branch->parentId);
-                }
-                foreach ($branch->propertyMap as $objectId => $networkId) {
-                    $properties[$networkId] = $this->objects[$objectId];
-                }
-                return $properties;
-            }
-        }
-        return [];
     }
 }

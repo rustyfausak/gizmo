@@ -35,6 +35,7 @@ class Actor
             'Archetypes.GameEvent.GameEvent_SoccarSplitscreen' => 'TAGame.GameEvent_SoccarSplitscreen_TA',
             'TAGame.Default__PRI_TA' => 'TAGame.PRI_TA',
             'Archetypes.GameEvent.GameEvent_SoccarPrivate' => 'TAGame.GameEvent_SoccarPrivate_TA',
+            'Archetypes.GameEvent.GameEvent_Soccar' => 'TAGame.GameEvent_Soccar_TA',
             'Archetypes.Ball.Ball_Default' => 'TAGame.Ball_TA',
             'Archetypes.Car.Car_Default' => 'TAGame.Car_TA',
             'Archetypes.CarComponents.CarComponent_Boost' => 'TAGame.CarComponent_Boost_TA',
@@ -77,9 +78,17 @@ class Actor
     /**
      * @return int
      */
-    public function getPropertyBits()
+    public function getNumPropertyBits()
     {
-        return ceil(log(sizeof($this->properties) + 1, 2));
+        return BinaryReader::numBitsToRepresent(sizeof($this->properties));
+    }
+
+    /**
+     * @return int
+     */
+    public function getNumProperties()
+    {
+        return sizeof($this->properties);
     }
 
     /**
@@ -87,7 +96,6 @@ class Actor
      */
     public function deserializeInit($br)
     {
-        $found = false;
         foreach ([
             'TheWorld:PersistentLevel.CrowdActor_TA_',
             'TheWorld:PersistentLevel.CrowdManager_TA_',
@@ -101,6 +109,7 @@ class Actor
             case 'TAGame.PRI_TA':
             case 'TAGame.GRI_TA':
             case 'TAGame.Team_Soccar_TA':
+            case 'TAGame.GameEvent_Soccar_TA':
             case 'TAGame.GameEvent_SoccarPrivate_TA':
             case 'TAGame.GameEvent_SoccarSplitscreen_TA':
                 $this->rotator = Vector::deserializeByteVector($br);

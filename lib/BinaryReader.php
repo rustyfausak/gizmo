@@ -56,6 +56,50 @@ class BinaryReader
     }
 
     /**
+     * Read and return an int.
+     *
+     * @param int $count
+     * @return int
+     */
+    public function readInt($count)
+    {
+        return bindec(strrev($this->readBits($count)));
+    }
+
+    /**
+     * If reading the last bit of a number as 1 would put the number over $max,
+     * don't read that bit and assume it is 0.
+     *
+     * @param int $max
+     * @return int
+     */
+    public function readSmartInt($max)
+    {
+        $count = self::numBitsToRepresent($max);
+        $check = $this->readInt($count - 1);
+        $last_bit_val = pow(2, $count - 1);
+        if ($check + $last_bit_val > $max) {
+            return $check;
+        }
+        return intval($check + ($this->readBit() ? $last_bit_val : 0));
+    }
+
+    /**
+     * Read and return a string.
+     *
+     * @return string
+     */
+    public function readString()
+    {
+        $str = '';
+        $size = $this->readInt(32);
+        for ($i = 0; $i < $size; $i++) {
+            $str .= chr($this->readInt(8));
+        }
+        return $str;
+    }
+
+    /**
      * Read and return a number of bits.
      *
      * @param int $count
@@ -168,5 +212,16 @@ class BinaryReader
             }
         }
         return $tmp;
+    }
+
+    /**
+     * Returns the number of bits needed to represent an int of the given value.
+     *
+     * @param int $int
+     * @return int
+     */
+    public static function numBitsToRepresent($int)
+    {
+        return ceil(log($int + 1, 2));
     }
 }

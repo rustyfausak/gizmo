@@ -23,6 +23,8 @@ class PropertyBranch
         $this->classId = $classId;
         $this->parentId = null;
         $this->id = null;
+        $this->oId = $id;
+        $this->oParentId = $parentId;
         if (!$id) {
             $this->id = 0;
         }

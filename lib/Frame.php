@@ -27,9 +27,6 @@ class Frame
         while ($br->readBit() == 1) {
             $frame->replications[] = Replication::deserialize($replay, $br, $frame->number);
         }
-        print "end\n";
-        print $br->readBits(200);
-        print "\n";
         return $frame;
     }
 

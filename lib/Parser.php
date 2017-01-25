@@ -24,9 +24,11 @@ class Parser
         $handle = fopen($path, 'rb');
 
         // Size of properties section
-        self::readInt($handle);
+        $size = self::readInt($handle);
+        print "size = {$size}\n";
         // CRC
-        self::readInt($handle);
+        $crc = self::readInt($handle);
+        print "crc = {$crc}\n";
 
         $replay->version = self::readInt($handle) . '.' . self::readInt($handle);
         $replay->type = self::readString($handle);
@@ -51,7 +53,7 @@ class Parser
         fclose($handle);
 
         $replay->buildCache();
-        $replay->frames = self::deserializeFrames($replay, $frameData);
+        //$replay->frames = self::deserializeFrames($replay, $frameData);
 
         return $replay;
     }
@@ -65,8 +67,10 @@ class Parser
         $frames = [];
         $br = new BinaryReader(BinaryReader::asBits($frameData), false);
         foreach ($replay->keyFrames as $keyFrame) {
+            print "deserializing keyframe at position {$keyFrame->position}\n";
             $br->seek($keyFrame->position);
             $frames[] = Frame::deserialize($replay, $br, $keyFrame->frameNumber);
+            print "Done\n";
             exit;
         }
         return $frames;
@@ -125,6 +129,8 @@ class Parser
                 foreach (range(1, $length) as $i) {
                     $property->value[] = self::readProperties($handle);
                 }
+                break;
+            case 'ByteProperty':
                 break;
             default:
                 throw new \Exception('Unexpected property type "' . $property->type . '"');
